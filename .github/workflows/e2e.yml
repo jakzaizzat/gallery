@@ -35,7 +35,7 @@ jobs:
       - name: "Read JSON file"
         run: |
           JSON=$(cat _internal/test-wallet.json)
-          echo "::set-output name=matrix::${JSON//'%'/'%25'}"
+          echo "::set-output name=test-wallet::::add-mask::${JSON//'%'/'%25'}"
       # - run:
       #     name: "Install cli dependencies"
       #     command: sudo apt-get -y install unzip
@@ -46,6 +46,3 @@ jobs:
         run: |
           ls
           echo "::add-mask::filthyfansofpeanutbutter.com"
-      - name: "Read"
-        run: |
-          cat _internal/test-wallet.json
