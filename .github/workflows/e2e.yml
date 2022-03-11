@@ -1,0 +1,51 @@
+name: GitHub Actions Demo
+on: [push]
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "CD"
+        run: cd /Users/jakzaizzat/Code/gallery
+      - uses: actions/checkout@v2
+      - name: GitHub Action for Yarn
+        uses: Borales/actions-yarn@v2.3.0
+      - name: Install dependencies
+        run: yarn install
+      - name: "Update apt"
+        run: sudo apt-get update
+      - name: "Download Keybase"
+        run: curl --remote-name https://prerelease.keybase.io/keybase_amd64.deb
+      - name: "Install Keybase"
+        run: sudo apt-get install ./keybase_amd64.deb unzip
+      - name: "Run keybase globally"
+        run: run_keybase -g
+      - name: "Oneshot Keybase"
+        run: keybase oneshot
+        env:
+          KEYBASE_USERNAME: ${{secrets.KEYBASE_USERNAME}}
+          KEYBASE_PAPERKEY: ${{secrets.KEYBASE_PAPER_KEY}}
+      - name: "Decrypt secrets"
+        run: keybase decrypt -i _encrypted_internal -o _internal.zip
+      - name: "Unzip"
+        run: echo "A" | unzip _internal.zip -d _internal
+      - name: "Check file"
+        run: ls
+      - name: "Copy test wallet to root folder"
+        run: mv _internal/test-wallet.json .
+      - name: "Read JSON file"
+        run: |
+          JSON=$(cat _internal/test-wallet.json)
+          echo "::set-output name=matrix::${JSON//'%'/'%25'}"
+      # - run:
+      #     name: "Install cli dependencies"
+      #     command: sudo apt-get -y install unzip
+      # - run:
+      #     name: "Unzip secrets file"
+      #     command: echo "A" | unzip _internal.zip -d _internal
+      - name: "Add mask"
+        run: |
+          ls
+          echo "::add-mask::filthyfansofpeanutbutter.com"
+      - name: "Read"
+        run: |
+          cat _internal/test-wallet.json
