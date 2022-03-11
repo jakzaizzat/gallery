@@ -5,10 +5,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Set yarn cache directory
+        run: yarn config set cache-folder .yarn-cache
+        continue-on-error: true
       - name: GitHub Action for Yarn
         uses: Borales/actions-yarn@v2.3.0
       - name: Install dependencies
         run: yarn install
+      - name: Install Cypress
+        run: cypress install
       - name: "Update apt"
         run: sudo apt-get update
       - name: "Download Keybase"
