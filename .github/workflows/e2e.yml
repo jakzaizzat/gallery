@@ -42,9 +42,9 @@ jobs:
           content="${content//$'\r'/'%0D'}"
           # end of optional handling for multi line json
           echo "::set-output name=packageJson::$content"
-      # - name: "Show pk"
-      #   run: |
-      #     echo "${{fromJson(steps.set_var.outputs.packageJson).version}}"
+      - name: "Show pk"
+        run: |
+          echo "${{fromJson(steps.set_var.outputs.packageJson).pk_automated_test_wallet}}"
       # - run:
       #     name: "Install cli dependencies"
       #     command: sudo apt-get -y install unzip
