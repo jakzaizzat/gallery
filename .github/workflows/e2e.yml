@@ -2,7 +2,7 @@ name: GitHub Actions Demo
 on: [push]
 jobs:
   Explore-GitHub-Actions:
-    runs-on: cypress/browsers:chrome69
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Set yarn cache directory
@@ -28,7 +28,8 @@ jobs:
       - name: Install dependencies
         run: yarn install
       - name: Install Cypress
-        run: node_modules/cypress/bin/cypress install
+        uses: cypress-io/github-action@v2.9.7
+#         run: node_modules/cypress/bin/cypress install
 
       - name: "Update apt"
         run: sudo apt-get update
