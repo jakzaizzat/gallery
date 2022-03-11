@@ -5,31 +5,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set yarn cache directory
-        run: yarn config set cache-folder .yarn-cache
-        continue-on-error: true
-      - name: Cache yarn modules
-        uses: actions/cache@937d24475381cd9c75ae6db12cb4e79714b926ed # pin@v2
-        with:
-          path: |
-            .yarn-cache
-            node_modules
-          key: ${{ runner.os }}-e2e-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-e2e-
-        continue-on-error: true
-
-      - name: Install dependencies
-        run: yarn install
-        env:
-          CYPRESS_CACHE_FOLDER: ${{ github.workspace }}/node_modules/.cache/Cypress
-      - name: GitHub Action for Yarn
-        uses: Borales/actions-yarn@v2.3.0
-      - name: Install dependencies
-        run: yarn install
+      # - name: Install dependencies
+      #   run: yarn install
+      #   env:
+      #     CYPRESS_CACHE_FOLDER: ${{ github.workspace }}/node_modules/.cache/Cypress
+      # - name: GitHub Action for Yarn
+      #   uses: Borales/actions-yarn@v2.3.0
+      # - name: Install dependencies
+      #   run: yarn install
       - name: Install Cypress
         uses: cypress-io/github-action@v2.9.7
-#         run: node_modules/cypress/bin/cypress install
 
       - name: "Update apt"
         run: sudo apt-get update
