@@ -25,7 +25,7 @@ export function getResizedNftImageUrlWithFallback(nft: Nft, size = 288): string 
     return `${image_url}=w${size}`;
   }
 
-  return image_original_url || image_url || contract_image_url || FALLBACK_URL;
+  return image_url || image_original_url || contract_image_url || FALLBACK_URL;
 }
 
 export function getFileExtension(url: string) {
@@ -48,10 +48,14 @@ export function getMediaTypeForAssetUrl(assetUrl: string) {
     case 'mp4':
       return NftMediaType.VIDEO;
     case 'mp3':
+    case 'wav':
       return NftMediaType.AUDIO;
     case 'glb':
       return NftMediaType.MODEL;
     case 'gif':
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
       return NftMediaType.IMAGE;
     default:
       return NftMediaType.ANIMATION;

@@ -6,17 +6,22 @@ import { useAuthActions } from 'contexts/auth/AuthContext';
 import useFetcher from 'contexts/swr/useFetcher';
 import { isWeb3Error, Web3Error } from 'types/Error';
 import { INITIAL, PROMPT_SIGNATURE, PendingState, LISTENING_ONCHAIN } from 'types/Wallet';
-import Mixpanel from 'utils/mixpanel';
 import GnosisSafePendingMessage from '../GnosisSafePendingMessage';
-import { fetchNonce, loginOrCreateUser } from '../authRequestUtils';
+import { useCreateNonceMutation, useLoginOrCreateUserMutation } from '../authRequestUtils';
 import {
-  GNOSIS_SAFE_WALLET_TYPE_ID,
   listenForGnosisSignature,
-  validateNonceSignedByGnosis,
   signMessageWithContractAccount,
+  validateNonceSignedByGnosis,
 } from '../walletUtils';
 import { GNOSIS_NONCE_STORAGE_KEY } from 'constants/storageKeys';
 import { getLocalStorageItem } from 'utils/localStorage';
+import {
+  useTrackSignInAttempt,
+  useTrackSignInSuccess,
+  useTrackSignInError,
+  useTrackCreateUserSuccess,
+} from 'contexts/analytics/authUtil';
+import { captureException } from '@sentry/nextjs';
 
 type Props = {
   pendingWallet: AbstractConnector;
@@ -40,26 +45,35 @@ function AuthenticateWalletPendingGnosisSafe({
   const [nonce, setNonce] = useState('');
   const [userExists, setUserExists] = useState(false);
 
+  const loginOrCreateUser = useLoginOrCreateUserMutation();
+  const trackSignInAttempt = useTrackSignInAttempt();
+  const trackSignInSuccess = useTrackSignInSuccess();
+  const trackSignInError = useTrackSignInError();
+  const trackCreateUserSuccess = useTrackCreateUserSuccess('Gnosis Safe');
+
   const authenticateWithBackend = useCallback(
     async (address: string, nonce: string) => {
-      const payload = {
-        address,
-        wallet_type: GNOSIS_SAFE_WALLET_TYPE_ID,
-        nonce,
-      };
+      const { userId } = await loginOrCreateUser({
+        userExists,
+        variables: { mechanism: { gnosisSafe: { address, nonce } } },
+      });
 
-      await loginOrCreateUser(userExists, payload, fetcher);
+      if (userExists) {
+        trackCreateUserSuccess();
+      }
+
       window.localStorage.removeItem(GNOSIS_NONCE_STORAGE_KEY);
 
-      Mixpanel.trackSignInSuccess('Gnosis Safe');
-      setLoggedIn(address);
+      trackSignInSuccess('Gnosis Safe');
+      setLoggedIn(userId, address);
     },
-    [fetcher, setLoggedIn, userExists]
+    [loginOrCreateUser, setLoggedIn, trackCreateUserSuccess, trackSignInSuccess, userExists]
   );
 
   const handleError = useCallback(
     (error: unknown) => {
-      Mixpanel.trackSignInError('Gnosis Safe', error);
+      captureException(error);
+      trackSignInError('Gnosis Safe', error);
       if (isWeb3Error(error)) {
         setDetectedError(error);
       }
@@ -70,7 +84,7 @@ function AuthenticateWalletPendingGnosisSafe({
         setDetectedError(web3Error);
       }
     },
-    [setDetectedError]
+    [setDetectedError, trackSignInError]
   );
   const [authenticationFlowStarted, setAuthenticationFlowStarted] = useState(false);
 
@@ -131,6 +145,8 @@ function AuthenticateWalletPendingGnosisSafe({
     }
   }, [account, attemptAuthentication, nonce]);
 
+  const createNonce = useCreateNonceMutation();
+
   // This runs once to auto-initiate the authentication flow, when wallet is first connected (ie when 'account' is defined)
   useEffect(() => {
     if (authenticationFlowStarted) {
@@ -141,8 +157,8 @@ function AuthenticateWalletPendingGnosisSafe({
       if (account) {
         setAuthenticationFlowStarted(true);
         try {
-          Mixpanel.trackSignInAttempt('Gnosis Safe');
-          const { nonce, user_exists: userExists } = await fetchNonce(account, fetcher);
+          trackSignInAttempt('Gnosis Safe');
+          const { nonce, user_exists: userExists } = await createNonce(account);
           setNonce(nonce);
           setUserExists(userExists);
 
@@ -162,9 +178,11 @@ function AuthenticateWalletPendingGnosisSafe({
     account,
     attemptAuthentication,
     authenticationFlowStarted,
+    createNonce,
     fetcher,
     handleError,
     previousAttemptNonce,
+    trackSignInAttempt,
   ]);
 
   return (

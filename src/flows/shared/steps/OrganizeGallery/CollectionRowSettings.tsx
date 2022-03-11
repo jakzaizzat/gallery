@@ -9,10 +9,12 @@ import { withWizard, WizardComponentProps } from 'react-albus';
 import { useCollectionWizardActions } from 'contexts/wizard/CollectionWizardContext';
 import useUpdateCollectionHidden from 'hooks/api/collections/useUpdateCollectionHidden';
 import { Collection } from 'types/Collection';
-import Mixpanel from 'utils/mixpanel';
 import noop from 'utils/noop';
 import CollectionCreateOrEditForm from '../OrganizeCollection/CollectionCreateOrEditForm';
 import DeleteCollectionConfirmation from './DeleteCollectionConfirmation';
+import CopyToClipboard from 'components/CopyToClipboard/CopyToClipboard';
+import { useAuthenticatedUsername } from 'hooks/api/users/useUser';
+import { useTrack } from 'contexts/analytics/AnalyticsContext';
 
 type Props = {
   collection: Collection;
@@ -21,14 +23,19 @@ type Props = {
 function CollectionRowSettings({ collection, wizard: { push } }: Props & WizardComponentProps) {
   const { showModal } = useModal();
   const { setCollectionIdBeingEdited } = useCollectionWizardActions();
+  const username = useAuthenticatedUsername();
 
   const { id, name, collectors_note, hidden } = collection;
 
+  const collectionUrl = `${window.location.origin}/${username}/${id}`;
+
+  const track = useTrack();
+
   const handleEditCollectionClick = useCallback(() => {
-    Mixpanel.track('Update existing collection button clicked');
+    track('Update existing collection button clicked');
     setCollectionIdBeingEdited(id);
     push('organizeCollection');
-  }, [id, push, setCollectionIdBeingEdited]);
+  }, [id, push, setCollectionIdBeingEdited, track]);
 
   const handleEditNameClick = useCallback(() => {
     showModal(
@@ -52,9 +59,9 @@ function CollectionRowSettings({ collection, wizard: { push } }: Props & WizardC
   }, [id, hidden, toggleHideCollection]);
 
   const handleDeleteClick = useCallback(() => {
-    Mixpanel.track('Delete collection button clicked');
+    track('Delete collection button clicked');
     showModal(<DeleteCollectionConfirmation collectionId={id} />);
-  }, [id, showModal]);
+  }, [id, showModal, track]);
 
   return (
     <StyledCollectionRowSettings>
@@ -68,6 +75,10 @@ function CollectionRowSettings({ collection, wizard: { push } }: Props & WizardC
           text={hidden ? 'Show' : 'Hide'}
           underlineOnHover
         />
+        <Spacer height={12} />
+        <CopyToClipboard textToCopy={collectionUrl}>
+          <TextButton text="Share" underlineOnHover />
+        </CopyToClipboard>
         <Spacer height={12} />
         <TextButton onClick={handleDeleteClick} text="Delete" underlineOnHover />
       </Dropdown>

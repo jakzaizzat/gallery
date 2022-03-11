@@ -1,7 +1,6 @@
 import { CSSProperties, memo, Suspense } from 'react';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 
-import { fullPageHeightWithoutNavbarAndFooter } from 'components/core/Page/constants';
 import FullPageLoader from 'components/core/Loader/FullPageLoader';
 
 type Props = {
@@ -20,10 +19,13 @@ const timeoutConfig = {
 
 const childNodeStyles = {
   width: '100%',
+  height: '100%',
 };
 
 const transitionGroupStyles = {
-  minHeight: fullPageHeightWithoutNavbarAndFooter,
+  // NOTE: this doesn't seem to do anything. in the future we could use this to only transition
+  // the inner content of a page, while leaving the navbar + footer visible.
+  // minHeight: fullPageHeightWithoutNavbarAndFooter,
 };
 
 /**
@@ -38,9 +40,9 @@ function FadeTransitioner({ locationKey, children }: Props) {
       <CSSTransition key={locationKey} timeout={timeoutConfig} classNames="fade">
         {/* Placing the Suspense boundary here (within the TransitionGroup) allows the scroll position
             to remain uninterrupted upon navigation */}
-        <Suspense fallback={<FullPageLoader />}>
-          <div style={childNodeStyles as CSSProperties}>{children}</div>
-        </Suspense>
+        <div style={childNodeStyles as CSSProperties}>
+          <Suspense fallback={<FullPageLoader />}>{children}</Suspense>
+        </div>
       </CSSTransition>
     </TransitionGroup>
   );

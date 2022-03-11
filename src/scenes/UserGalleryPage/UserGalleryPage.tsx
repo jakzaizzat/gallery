@@ -5,6 +5,8 @@ import styled from 'styled-components';
 import UserGallery from './UserGallery';
 import UserGalleryPageErrorBoundary from './UserGalleryPageErrorBoundary';
 import Head from 'next/head';
+import { useEffect } from 'react';
+import { useTrack } from 'contexts/analytics/AnalyticsContext';
 
 type UserGalleryPageProps = {
   username: string;
@@ -13,12 +15,16 @@ type UserGalleryPageProps = {
 function UserGalleryPage({ username }: UserGalleryPageProps) {
   const headTitle = `${username} | Gallery`;
 
+  const track = useTrack();
+
+  useEffect(() => {
+    track('Page View: User Gallery', { username });
+  }, [username, track]);
+
   return (
     <UserGalleryPageErrorBoundary>
       <Head>
         <title>{headTitle}</title>
-        <meta property="og:title" content={headTitle} key="og:title" />
-        <meta name="twitter:title" content={headTitle} key="twitter:title" />
       </Head>
       <Page>
         <StyledUserGalleryWrapper>
@@ -32,7 +38,7 @@ function UserGalleryPage({ username }: UserGalleryPageProps) {
 const StyledUserGalleryWrapper = styled.div`
   display: flex;
   justify-content: center;
-  margin: 0 ${pageGutter.mobile}px;
+  margin: 0 ${pageGutter.mobile}px 24px;
 
   @media only screen and ${breakpoints.tablet} {
     margin: 0 ${pageGutter.tablet}px;

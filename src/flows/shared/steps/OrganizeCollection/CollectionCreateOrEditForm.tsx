@@ -16,26 +16,27 @@ import useUpdateCollectionInfo from 'hooks/api/collections/useUpdateCollectionIn
 import { Collection, CollectionLayout } from 'types/Collection';
 import useAuthenticatedGallery from 'hooks/api/galleries/useAuthenticatedGallery';
 import useCreateCollection from 'hooks/api/collections/useCreateCollection';
-import Mixpanel from 'utils/mixpanel';
-import { Nft } from 'types/Nft';
+import { StagingItem } from './types';
+import { removeWhitespacesFromStagedItems } from 'utils/collectionLayout';
+import { useTrack } from 'contexts/analytics/AnalyticsContext';
 
 type Props = {
   onNext: WizardContext['next'];
   collectionId?: Collection['id'];
   collectionName?: Collection['name'];
   collectionCollectorsNote?: Collection['collectors_note'];
-  nfts?: Nft[];
+  stagedItems?: StagingItem[];
   layout?: CollectionLayout;
 };
 
-export const COLLECTION_DESCRIPTION_MAX_CHAR_COUNT = 300;
+export const COLLECTION_DESCRIPTION_MAX_CHAR_COUNT = 600;
 
 function CollectionCreateOrEditForm({
   onNext,
   collectionId,
   collectionName,
   collectionCollectorsNote,
-  nfts,
+  stagedItems,
   layout,
 }: Props) {
   const { hideModal } = useModal();
@@ -67,12 +68,12 @@ function CollectionCreateOrEditForm({
 
   const buttonText = useMemo(() => {
     // Collection is being created
-    if (nfts) {
+    if (stagedItems) {
       return 'create';
     }
 
     return hasEnteredValue ? 'save' : 'skip';
-  }, [hasEnteredValue, nfts]);
+  }, [hasEnteredValue, stagedItems]);
 
   const goToNextStep = useCallback(() => {
     onNext();
@@ -84,6 +85,8 @@ function CollectionCreateOrEditForm({
   const { id: galleryId } = useAuthenticatedGallery();
   const updateCollection = useUpdateCollectionInfo();
   const createCollection = useCreateCollection();
+
+  const track = useTrack();
 
   const handleClick = useCallback(async () => {
     setGeneralError('');
@@ -97,7 +100,7 @@ function CollectionCreateOrEditForm({
     try {
       // Collection is being updated
       if (collectionId) {
-        Mixpanel.track('Update collection', {
+        track('Update collection', {
           id: collectionId,
           title,
           description,
@@ -106,13 +109,13 @@ function CollectionCreateOrEditForm({
       }
 
       // Collection is being created
-      if (!collectionId && nfts && layout) {
-        Mixpanel.track('Create collection', {
+      if (!collectionId && stagedItems && layout) {
+        track('Create collection', {
           added_name: title.length > 0,
           added_description: description.length > 0,
-          nft_ids: nfts.map((nft) => nft.id),
+          nft_ids: removeWhitespacesFromStagedItems(stagedItems).map(({ id }) => id),
         });
-        await createCollection(galleryId, title, description, nfts, layout);
+        await createCollection(galleryId, title, description, stagedItems, layout);
       }
 
       goToNextStep();
@@ -126,13 +129,14 @@ function CollectionCreateOrEditForm({
   }, [
     description,
     collectionId,
-    nfts,
+    stagedItems,
     goToNextStep,
     updateCollection,
     title,
     createCollection,
     galleryId,
     layout,
+    track,
   ]);
 
   return (
@@ -180,8 +184,6 @@ function CollectionCreateOrEditForm({
 const StyledCollectionEditInfoForm = styled.div`
   display: flex;
   flex-direction: column;
-
-  width: 480px;
 `;
 
 const StyledTextAreaWithCharCount = styled(TextAreaWithCharCount)`

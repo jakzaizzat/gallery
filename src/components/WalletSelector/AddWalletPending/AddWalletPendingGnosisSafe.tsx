@@ -19,8 +19,7 @@ import {
 } from 'types/Wallet';
 import { useModal } from 'contexts/modal/ModalContext';
 import ManageWalletsModal from 'scenes/Modals/ManageWalletsModal';
-import Mixpanel from 'utils/mixpanel';
-import { addWallet, fetchNonce } from '../authRequestUtils';
+import { addWallet, useCreateNonceMutation } from '../authRequestUtils';
 import {
   GNOSIS_SAFE_WALLET_TYPE_ID,
   listenForGnosisSignature,
@@ -29,6 +28,12 @@ import {
 } from '../walletUtils';
 import { getLocalStorageItem } from 'utils/localStorage';
 import { GNOSIS_NONCE_STORAGE_KEY } from 'constants/storageKeys';
+import {
+  useTrackAddWalletAttempt,
+  useTrackAddWalletSuccess,
+  useTrackAddWalletError,
+} from 'contexts/analytics/authUtil';
+import { captureException } from '@sentry/nextjs';
 
 type Props = {
   pendingWallet: AbstractConnector;
@@ -62,9 +67,14 @@ function AddWalletPendingGnosisSafe({
     [showModal]
   );
 
+  const trackAddWalletAttempt = useTrackAddWalletAttempt();
+  const trackAddWalletSuccess = useTrackAddWalletSuccess();
+  const trackAddWalletError = useTrackAddWalletError();
+
   const handleError = useCallback(
     (error: unknown) => {
-      Mixpanel.trackAddWalletError('Gnosis Safe', error);
+      captureException(error);
+      trackAddWalletError('Gnosis Safe', error);
       if (isWeb3Error(error)) {
         setDetectedError(error);
       }
@@ -75,7 +85,7 @@ function AddWalletPendingGnosisSafe({
         setDetectedError(web3Error);
       }
     },
-    [setDetectedError]
+    [setDetectedError, trackAddWalletError]
   );
 
   const authenticateWithBackend = useCallback(
@@ -92,10 +102,10 @@ function AddWalletPendingGnosisSafe({
         throw new Error('Signature is not valid');
       }
 
-      Mixpanel.trackAddWalletSuccess('Gnosis Safe');
+      trackAddWalletSuccess('Gnosis Safe');
       openManageWalletsModal(address);
     },
-    [fetcher, openManageWalletsModal]
+    [fetcher, openManageWalletsModal, trackAddWalletSuccess]
   );
 
   // Initiates the full authentication flow including signing the message, listening for the signature, validating it. then calling the backend
@@ -108,7 +118,7 @@ function AddWalletPendingGnosisSafe({
         }
 
         setPendingState(PROMPT_SIGNATURE);
-        Mixpanel.trackAddWalletAttempt('Gnosis Safe');
+        trackAddWalletAttempt('Gnosis Safe');
         await signMessageWithContractAccount(address, nonce, pendingWallet, library);
         window.localStorage.setItem(GNOSIS_NONCE_STORAGE_KEY, JSON.stringify(nonce));
 
@@ -120,7 +130,7 @@ function AddWalletPendingGnosisSafe({
         handleError(error);
       }
     },
-    [pendingWallet, library, authenticateWithBackend, handleError]
+    [trackAddWalletAttempt, pendingWallet, library, authenticateWithBackend, handleError]
   );
 
   // Validates the signature on-chain. If it hasnt been signed yet, initializes a listener to wait for the SignMsg event.
@@ -157,6 +167,8 @@ function AddWalletPendingGnosisSafe({
     }
   }, [account, attemptAddWallet, nonce, userExists]);
 
+  const createNonce = useCreateNonceMutation();
+
   // This runs once to auto-initiate the authentication flow, when wallet is first connected (ie when 'account' is defined)
   useEffect(() => {
     if (authenticationFlowStarted) {
@@ -173,7 +185,7 @@ function AddWalletPendingGnosisSafe({
             return;
           }
 
-          const { nonce, user_exists: userExists } = await fetchNonce(account, fetcher);
+          const { nonce, user_exists: userExists } = await createNonce(account);
           setNonce(nonce);
           setUserExists(userExists);
 
@@ -197,6 +209,7 @@ function AddWalletPendingGnosisSafe({
     fetcher,
     handleError,
     previousAttemptNonce,
+    createNonce,
   ]);
 
   if (pendingState === ADDRESS_ALREADY_CONNECTED && account) {

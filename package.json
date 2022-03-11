@@ -1,13 +1,15 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next",
-    "build": "next build",
+    "dev": "concurrently -n Next,Relay-Compiler \"next\" \"yarn relay:watch\"",
+    "build": "yarn relay && next build",
     "start": "next start",
     "lint": "eslint . --ext .js,.ts,.tsx,.cjs",
     "typecheck": "tsc --noEmit",
-    "relay": "relay-compiler",
-    "relay:watch": "relay-compiler --watch"
+    "relay": "mkdir __generated__; relay-compiler",
+    "relay:watch": "mkdir __generated__; relay-compiler --watch",
+    "synpress:open": "synpress open",
+    "synpress:run": "synpress run"
   },
   "dependencies": {
     "@dnd-kit/core": "^3.0.1",
@@ -17,6 +19,7 @@
     "@ethersproject/contracts": "^5.4.1",
     "@ethersproject/providers": "^5.0.24",
     "@pmmmwh/react-refresh-webpack-plugin": "0.4.3",
+    "@sentry/nextjs": "^6.18.1",
     "@web3-react/abstract-connector": "^6.0.7",
     "@web3-react/core": "^6.1.9",
     "@web3-react/injected-connector": "^6.0.7",
@@ -27,7 +30,7 @@
     "lodash.clonedeep": "^4.5.0",
     "lodash.unescape": "^4.0.1",
     "mixpanel-browser": "^2.41.0",
-    "next": "latest",
+    "next": "12.0.11-canary.0",
     "react": "^17.0.2",
     "react-albus": "^2.0.0",
     "react-dom": "^17.0.2",
@@ -45,6 +48,7 @@
   },
   "devDependencies": {
     "@svgr/webpack": "^5.5.0",
+    "@synthetixio/synpress": "^1.1.1",
     "@testing-library/jest-dom": "^5.15.0",
     "@testing-library/react": "^12.1.2",
     "@types/jest": "^27.0.2",
@@ -63,11 +67,10 @@
     "@typescript-eslint/parser": "^5.4.0",
     "babel-jest": "^27.3.1",
     "babel-plugin-relay": "^13.0.1",
+    "concurrently": "^7.0.0",
+    "cypress": "^9.4.1",
     "eslint": "^7.11.0",
     "eslint-config-prettier": "^8.3.0",
-    "eslint-config-xo": "^0.39.0",
-    "eslint-config-xo-react": "^0.25.0",
-    "eslint-config-xo-typescript": "^0.47.1",
     "eslint-plugin-ava": "^12.0.0",
     "eslint-plugin-eslint-comments": "^3.2.0",
     "eslint-plugin-node": "^11.1.0",

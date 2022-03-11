@@ -1,4 +1,15 @@
-export const USER_SIGNUP_ENABLED = true;
-export const MULTI_WALLET_ENABLED = true;
-export const MEMBERS_LIST_ENABLED = true;
-export const PARTNER_MINT_ENABLED = true;
+import { FeatureFlag } from 'components/core/enums';
+import isProduction from './isProduction';
+
+const PROD_FLAGS: Record<FeatureFlag, boolean> = {
+  GENERAL_MEMBERSHIP_MINT: true,
+  COLLECTORS_NOTE: true,
+};
+
+const DEV_FLAGS: Record<FeatureFlag, boolean> = {
+  GENERAL_MEMBERSHIP_MINT: true,
+  COLLECTORS_NOTE: true,
+};
+
+export const isFeatureEnabled = (flag: FeatureFlag) =>
+  isProduction() ? PROD_FLAGS[flag] : DEV_FLAGS[flag];

@@ -1,7 +1,10 @@
-import Banner from 'components/Banner/Banner';
+// uncomment if we need this next time
+// import Banner from 'components/Banner/Banner';
+import { GLOBAL_FOOTER_HEIGHT, GLOBAL_FOOTER_HEIGHT_MOBILE } from 'components/core/Page/constants';
 import GlobalFooter from 'components/core/Page/GlobalFooter';
 import GlobalNavbar from 'components/core/Page/GlobalNavbar/GlobalNavbar';
 import Spacer from 'components/core/Spacer/Spacer';
+import { useIsMobileWindowWidth } from 'hooks/useWindowSize';
 import { useMemo } from 'react';
 
 export type LayoutProps = {
@@ -10,6 +13,8 @@ export type LayoutProps = {
   // whether the footer should be rendered
   // if false, this will override both props below
   footer?: boolean;
+  // whether the footer should be fixed to bottom of page
+  footerIsFixed?: boolean;
   // whether the footer should be rendered within view
   footerVisibleWithinView?: boolean;
   // whether the footer should be rendered out of view
@@ -24,23 +29,30 @@ export type GalleryRouteProps = {
 } & LayoutProps;
 
 // fills up the space where the navbar or footer would be
-export const Filler = () => <Spacer height={80} />;
+export type FillerProps = { tallVariant?: boolean };
+
+export const Filler = ({ tallVariant = false }: FillerProps) => (
+  <Spacer height={tallVariant ? GLOBAL_FOOTER_HEIGHT_MOBILE : GLOBAL_FOOTER_HEIGHT} />
+);
 
 export default function GalleryRoute({
   element,
   freshLayout = false,
   navbar = true,
   footer = true,
+  footerIsFixed = false,
   footerVisibleWithinView = true,
   footerVisibleOutOfView = false,
 }: GalleryRouteProps) {
+  const isMobile = useIsMobileWindowWidth();
+
   const navbarComponent = useMemo(() => {
     if (navbar) {
       return <GlobalNavbar />;
     }
 
-    return <Filler />;
-  }, [navbar]);
+    return <Filler tallVariant={isMobile} />;
+  }, [navbar, isMobile]);
 
   const footerComponent = useMemo(() => {
     if (!footer) {
@@ -50,16 +62,16 @@ export default function GalleryRoute({
     if (footerVisibleOutOfView) {
       return (
         <>
-          <Filler />
-          <GlobalFooter />
+          <Filler tallVariant={isMobile} />
+          <GlobalFooter isFixed={footerIsFixed} />
         </>
       );
     }
 
     if (footerVisibleWithinView) {
-      return <GlobalFooter />;
+      return <GlobalFooter isFixed={footerIsFixed} />;
     }
-  }, [footer, footerVisibleOutOfView, footerVisibleWithinView]);
+  }, [footer, footerVisibleOutOfView, footerVisibleWithinView, footerIsFixed, isMobile]);
 
   const banner = useMemo(
     () =>

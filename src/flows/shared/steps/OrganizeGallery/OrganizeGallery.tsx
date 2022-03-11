@@ -9,7 +9,6 @@ import { WizardContext } from 'react-albus';
 import { useWizardId } from 'contexts/wizard/WizardDataProvider';
 import useAuthenticatedGallery from 'hooks/api/galleries/useAuthenticatedGallery';
 import { Collection } from 'types/Collection';
-import Mixpanel from 'utils/mixpanel';
 import { Filler } from 'scenes/_Router/GalleryRoute';
 import { BodyRegular, Heading } from 'components/core/Text/Text';
 import colors from 'components/core/colors';
@@ -19,6 +18,8 @@ import Header from './Header';
 import CollectionDnd from './CollectionDnd';
 import { useRouter } from 'next/router';
 import { useCanGoBack } from 'contexts/navigation/GalleryNavigationProvider';
+import { useCollectionWizardActions } from 'contexts/wizard/CollectionWizardContext';
+import { useTrack } from 'contexts/analytics/AnalyticsContext';
 
 type ConfigProps = {
   wizardId: string;
@@ -60,17 +61,19 @@ function useWizardConfig({ wizardId, username, next }: ConfigProps) {
     clearOnNext();
   }, [canGoBack, clearOnNext, back, replace, username]);
 
+  const track = useTrack();
+
   const saveGalleryAndReturnToProfile = useCallback(async () => {
     clearOnNext();
     // Save gallery changes (re-ordered collections)
     if (wizardId === 'onboarding') {
-      Mixpanel.track('Publish gallery');
+      track('Publish gallery');
       next();
       return;
     }
 
     void push(`/${username}`);
-  }, [clearOnNext, next, push, username, wizardId]);
+  }, [clearOnNext, next, push, username, wizardId, track]);
 
   useEffect(() => {
     setOnNext(saveGalleryAndReturnToProfile);
@@ -78,7 +81,7 @@ function useWizardConfig({ wizardId, username, next }: ConfigProps) {
   }, [setOnPrevious, setOnNext, saveGalleryAndReturnToProfile, returnToPrevious]);
 }
 
-function OrganizeGallery({ next }: WizardContext) {
+function OrganizeGallery({ next, push }: WizardContext) {
   const wizardId = useWizardId();
   const user = useAuthenticatedUser();
 
@@ -86,6 +89,17 @@ function OrganizeGallery({ next }: WizardContext) {
   const [sortedCollections, setSortedCollections] = useState(collections);
 
   useNotOptimizedForMobileWarning();
+
+  const router = useRouter();
+  const { setCollectionIdBeingEdited } = useCollectionWizardActions();
+  const collectionId = (router.query.collectionId as string) || null;
+
+  useEffect(() => {
+    if (collectionId) {
+      setCollectionIdBeingEdited(collectionId);
+      push('organizeCollection');
+    }
+  }, [collectionId, push, setCollectionIdBeingEdited]);
 
   useEffect(() => {
     // When the server sends down its source of truth, sync the local state

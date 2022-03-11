@@ -5,10 +5,12 @@ import ActionText from '../ActionText/ActionText';
 type Props = {
   className?: string;
   text: string;
-  onClick?: () => void;
+  // TODO: Refactor to support more than MouseEvent
+  onClick?: (event: React.MouseEvent<HTMLElement>) => void;
   underlineOnHover?: boolean;
   disableTextTransform?: boolean;
   disabled?: boolean;
+  dataTestId?: string;
 };
 
 function TextButton({
@@ -18,6 +20,7 @@ function TextButton({
   underlineOnHover = false,
   disableTextTransform = false,
   disabled,
+  dataTestId,
 }: Props) {
   return (
     <StyledButton
@@ -25,6 +28,7 @@ function TextButton({
       onClick={onClick}
       underlineOnHover={underlineOnHover}
       disabled={disabled}
+      data-testid={dataTestId}
     >
       <StyledButtonText disableTextTransform={disableTextTransform} disabled={disabled}>
         {text}

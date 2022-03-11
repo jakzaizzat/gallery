@@ -6,13 +6,18 @@ import styled from 'styled-components';
 import colors from 'components/core/colors';
 import { BodyRegular, TitleMedium } from 'components/core/Text/Text';
 import { useAuthActions } from 'contexts/auth/AuthContext';
-import useFetcher from 'contexts/swr/useFetcher';
 import { isWeb3Error, Web3Error } from 'types/Error';
 import { INITIAL, PROMPT_SIGNATURE, PendingState } from 'types/Wallet';
-import Mixpanel from 'utils/mixpanel';
 import Spacer from 'components/core/Spacer/Spacer';
-import { fetchNonce, loginOrCreateUser } from '../authRequestUtils';
+import { useCreateNonceMutation, useLoginOrCreateUserMutation } from '../authRequestUtils';
 import { signMessageWithEOA } from '../walletUtils';
+import {
+  useTrackCreateUserSuccess,
+  useTrackSignInAttempt,
+  useTrackSignInError,
+  useTrackSignInSuccess,
+} from 'contexts/analytics/authUtil';
+import { captureException } from '@sentry/nextjs';
 
 type Props = {
   pendingWallet: AbstractConnector;
@@ -33,8 +38,15 @@ function AuthenticateWalletPendingDefault({
 
   const [pendingState, setPendingState] = useState<PendingState>(INITIAL);
 
-  const fetcher = useFetcher();
   const { setLoggedIn } = useAuthActions();
+
+  const createNonce = useCreateNonceMutation();
+  const loginOrCreateUser = useLoginOrCreateUserMutation();
+
+  const trackSignInAttempt = useTrackSignInAttempt();
+  const trackSignInSuccess = useTrackSignInSuccess();
+  const trackSignInError = useTrackSignInError();
+  const trackCreateUserSuccess = useTrackCreateUserSuccess(userFriendlyWalletName);
 
   /**
    * Auth Pipeline:
@@ -46,24 +58,35 @@ function AuthenticateWalletPendingDefault({
   const attemptAuthentication = useCallback(
     async (address: string, signer: JsonRpcSigner) => {
       setPendingState(PROMPT_SIGNATURE);
-      Mixpanel.trackSignInAttempt(userFriendlyWalletName);
+      trackSignInAttempt(userFriendlyWalletName);
 
-      const { nonce, user_exists: userExists } = await fetchNonce(address, fetcher);
+      const { nonce, user_exists: userExists } = await createNonce(address);
 
       const signature = await signMessageWithEOA(address, nonce, signer, pendingWallet);
 
-      const payload = {
-        signature,
-        address,
-        wallet_type: 0,
-        nonce,
-      };
+      const { userId } = await loginOrCreateUser({
+        userExists,
+        variables: { mechanism: { ethereumEoa: { address, nonce, signature } } },
+      });
 
-      await loginOrCreateUser(userExists, payload, fetcher);
-      Mixpanel.trackSignInSuccess(userFriendlyWalletName);
-      setLoggedIn(address);
+      if (userExists) {
+        trackSignInSuccess(userFriendlyWalletName);
+      } else {
+        trackCreateUserSuccess();
+      }
+
+      setLoggedIn(userId, address);
     },
-    [fetcher, setLoggedIn, pendingWallet, userFriendlyWalletName]
+    [
+      trackSignInAttempt,
+      userFriendlyWalletName,
+      createNonce,
+      pendingWallet,
+      loginOrCreateUser,
+      setLoggedIn,
+      trackSignInSuccess,
+      trackCreateUserSuccess,
+    ]
   );
 
   useEffect(() => {
@@ -72,7 +95,9 @@ function AuthenticateWalletPendingDefault({
         try {
           await attemptAuthentication(account.toLowerCase(), signer);
         } catch (error: unknown) {
-          Mixpanel.trackSignInError(userFriendlyWalletName, error);
+          captureException(error);
+          trackSignInError(userFriendlyWalletName, error);
+
           if (isWeb3Error(error)) {
             setDetectedError(error);
           }
@@ -87,7 +112,14 @@ function AuthenticateWalletPendingDefault({
     }
 
     void authenticate();
-  }, [account, signer, setDetectedError, attemptAuthentication, userFriendlyWalletName]);
+  }, [
+    account,
+    signer,
+    setDetectedError,
+    attemptAuthentication,
+    userFriendlyWalletName,
+    trackSignInError,
+  ]);
 
   if (pendingState === PROMPT_SIGNATURE) {
     return (

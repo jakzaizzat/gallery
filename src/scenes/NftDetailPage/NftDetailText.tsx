@@ -10,6 +10,7 @@ import { useMemo } from 'react';
 import NftAdditionalDetails from './NftAdditionalDetails';
 import { fullPageHeightWithoutNavbarAndFooter } from 'components/core/Page/constants';
 import { useBreakpoint } from 'hooks/useWindowSize';
+import { EnsOrAddress } from 'components/EnsOrAddress';
 
 type Props = {
   nft: Nft;
@@ -24,6 +25,8 @@ function NftDetailText({ nft }: Props) {
   const breakpoint = useBreakpoint();
   const horizontalLayout = breakpoint === size.desktop || breakpoint === size.tablet;
 
+  const creatorExists = nft.creator_name || nft.creator_address || nft.asset_contract?.address;
+
   return (
     <StyledDetailLabel horizontalLayout={horizontalLayout}>
       <Heading>{nft.name}</Heading>
@@ -37,9 +40,17 @@ function NftDetailText({ nft }: Props) {
       <BodyRegular color={colors.gray50}>Owned By</BodyRegular>
       <NftOwnerLink owner={currentOwner} ownerAddress={nft.owner_address} />
       <Spacer height={16} />
-      <BodyRegular color={colors.gray50}>Created By</BodyRegular>
-      <BodyRegular>{nft.creator_name || nft.creator_address}</BodyRegular>
-      <Spacer height={32} />
+      {creatorExists && (
+        <>
+          <BodyRegular color={colors.gray50}>Created By</BodyRegular>
+          <BodyRegular>
+            {nft.creator_name || (
+              <EnsOrAddress address={nft.creator_address || nft.asset_contract?.address} />
+            )}
+          </BodyRegular>
+        </>
+      )}
+      <Spacer height={16} />
       <NftAdditionalDetails nft={nft} />
     </StyledDetailLabel>
   );
@@ -64,7 +75,9 @@ function NftOwnerLink({ owner, ownerAddress }: NftOwnerProps) {
 
   return (
     <StyledLink href={`https://etherscan.io/address/${address}`} target="_blank" rel="noreferrer">
-      <BodyRegular>{address}</BodyRegular>
+      <BodyRegular>
+        <EnsOrAddress address={address} />
+      </BodyRegular>
     </StyledLink>
   );
 }
@@ -79,7 +92,7 @@ const StyledDetailLabel = styled.div<{ horizontalLayout: boolean }>`
     horizontalLayout
       ? `
     max-height: ${fullPageHeightWithoutNavbarAndFooter};
-    overflow: scroll;
+    overflow: auto;
     padding-right: 16px;
     `
       : `

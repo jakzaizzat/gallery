@@ -3,7 +3,7 @@ import RequestAction from 'hooks/api/_rest/RequestAction';
 import { ApiError } from 'errors/types';
 import { useAuthActions } from 'contexts/auth/AuthContext';
 
-const baseurl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
+export const baseurl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
 
 const ERR_UNAUTHORIZED = 401;
 
@@ -43,7 +43,12 @@ export const _fetch: FetcherType = async (path, action, parameters = {}) => {
     requestOptions.body = JSON.stringify(body);
   }
 
-  const response = await fetch(`${baseurl}/glry/v1${path}`, requestOptions);
+  let response: Response;
+  if (path.includes('http')) {
+    response = await fetch(path, requestOptions);
+  } else {
+    response = await fetch(`${baseurl}/glry/v1${path}`, requestOptions);
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const responseBody = await response.json().catch((error: unknown) => {
@@ -93,3 +98,6 @@ export default function useFetcher(): FetcherType {
     [handleUnauthorized]
   );
 }
+
+export const vanillaFetcher = async (...args: Parameters<typeof fetch>) =>
+  fetch(...args).then(async (res) => res.json());
