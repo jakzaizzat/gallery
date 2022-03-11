@@ -4,8 +4,6 @@ jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-latest
     steps:
-      - name: "CD"
-        run: cd /Users/jakzaizzat/Code/gallery
       - uses: actions/checkout@v2
       - name: GitHub Action for Yarn
         uses: Borales/actions-yarn@v2.3.0
