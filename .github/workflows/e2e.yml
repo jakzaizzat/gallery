@@ -2,7 +2,7 @@ name: GitHub Actions Demo
 on: [push]
 jobs:
   Explore-GitHub-Actions:
-    runs-on: ubuntu-latest
+    runs-on: cypress/browsers:chrome69
     steps:
       - uses: actions/checkout@v2
       - name: Set yarn cache directory
