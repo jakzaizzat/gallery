@@ -1,3 +1,5 @@
 {
-  "baseUrl": "https://gallery.so/"
+  "baseUrl": "https://gallery.so/",
+  "video": false,
+  "screenshotOnRunFailure": false
 }
