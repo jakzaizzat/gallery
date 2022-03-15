@@ -5,8 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      # - name: Install dependencies
-      #   run: yarn install
+      - name: Install dependencies
+        run: yarn install
       #   env:
       #     CYPRESS_CACHE_FOLDER: ${{ github.workspace }}/node_modules/.cache/Cypress
       # - name: GitHub Action for Yarn
