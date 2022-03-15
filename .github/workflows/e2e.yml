@@ -53,7 +53,7 @@ jobs:
       #   run: |
       #     echo "${{fromJson(steps.set_var.outputs.packageJson).pk_automated_test_wallet}}"
       - name: "Run synpress"
-        run: yarn run synpress:run
+        run: yarn synpress:run --config baseUrl=https://gallery.so
         env:
           PRIVATE_KEY: ${{fromJson(steps.set_var.outputs.packageJson).pk_automated_test_wallet}}
       # - run:
