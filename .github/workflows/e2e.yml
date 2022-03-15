@@ -2,7 +2,7 @@ name: GitHub Actions Demo
 on: [push]
 jobs:
   Explore-GitHub-Actions:
-    runs-on: ubuntu-latest
+    runs-on: cypress/browsers:node16.5.0-chrome97-ff96
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
@@ -53,7 +53,7 @@ jobs:
       #   run: |
       #     echo "${{fromJson(steps.set_var.outputs.packageJson).pk_automated_test_wallet}}"
       - name: "Run synpress"
-        run: yarn synpress:run --config baseUrl=https://gallery.so screenshotOnRunFailure=false video=false
+        run: yarn synpress:run --browser chrome --config baseUrl=https://gallery.so screenshotOnRunFailure=false video=false
         env:
           PRIVATE_KEY: ${{fromJson(steps.set_var.outputs.packageJson).pk_automated_test_wallet}}
       # - run:
